@@ -16,6 +16,21 @@ size_t pcb_next_instruction(struct PCB *pcb) {
 }
 
 struct PCB *create_process(const char *filename) {
+    struct loaded_program *lp = get_lp(filename);
+    if (lp) { // can create PCB right away
+        lp->instances++;
+        struct PCB *pcb = malloc(sizeof(struct PCB));
+        static pid fresh_pid = 1;
+        pcb->pid = fresh_pid++;
+        pcb->name = strdup(filename);
+        pcb->next = NULL;
+        pcb->pc = 0;
+        pcb->line_base = lp->line_base;
+        pcb->line_count = lp->line_count;
+        pcb->duration = lp->line_count;
+        return pcb;
+    }
+
     FILE *script = fopen(filename, "rt");
     if (!script) {
         perror("failed to open file for create_process");
@@ -23,6 +38,7 @@ struct PCB *create_process(const char *filename) {
     }
     struct PCB *pcb = create_process_from_FILE(script);
     pcb->name = strdup(filename);
+    add_lp(filename, pcb->line_base, pcb->line_count);
     return pcb;
 }
 
@@ -59,8 +75,14 @@ struct PCB *create_process_from_FILE(FILE *script) {
 }
 
 void free_pcb(struct PCB *pcb) {
-    for (size_t ix = pcb->line_base; ix < pcb->line_base + pcb->line_count; ++ix) {
-        free_line(ix);
+    struct loaded_program *lp = get_lp(pcb->name);
+    if (lp) {
+        lp->instances--;
+        if (lp->instances == 0) {
+            for (size_t ix = pcb->line_base; ix < pcb->line_base + pcb->line_count; ++ix) {
+                free_line(ix);
+            }
+        }
     }
     if (strcmp("", pcb->name)) {
         free(pcb->name);

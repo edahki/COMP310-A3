@@ -36,6 +36,7 @@ size_t next_free_line = 0;
 
 void reset_linememory_allocator() {
     next_free_line = 0;
+    memset(loaded_programs, 0, sizeof(loaded_programs));
     assert_linememory_is_empty();
 }
 
