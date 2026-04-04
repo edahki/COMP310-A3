@@ -77,6 +77,46 @@ const char *get_line(size_t index) {
     return linememory[index].line;
 }
 
+// Infrastructure for memory sharing between processes
+
+// table of unique loaded programs
+// Note: Since array is so small no need for it to contain pointers to structs
+struct loaded_program loaded_programs[3]; // maximum 3 unique programs at a time (no nested calls to exec)
+
+// finds loaded program based on name
+struct loaded_program *get_lp(char *name) {
+    for (int i = 0; i < 3; i++) {
+        if (loaded_programs[i].name && strcmp(loaded_programs[i].name, name) == 0) {
+            return &loaded_programs[i];
+        }
+    }
+    return NULL; // program doesn't exist
+}
+
+// adds loaded program (note: never called if loaded program with 'name' already exists)
+int add_lp(char *name, size_t line_base, size_t line_count) {
+    for (int i = 0; i < 3; i++) {
+        if (!loaded_programs[i].name) { // available slot
+            loaded_programs[i].name = strdup(name);
+            loaded_programs[i].line_base = line_base;
+            loaded_programs[i].line_count = line_count;
+            loaded_programs[i].instances = 1;
+            return 0;
+        }
+    }
+    return 1;
+}
+
+// decrements instances field of a loaded program
+// if instances == 0, don't do anything
+int decrement_instances_lp(char *name) {
+    struct loaded_program *lp = get_lp(name);
+    if (!lp) return 1;
+    if (lp->instances > 0) {
+        lp->instances--;
+    }
+    return 0;
+}
 
 // Shell memory functions
 
