@@ -12,6 +12,8 @@ void free_line(size_t index);
 const char *get_line(size_t index);
 void reset_linememory_allocator(void);
 
+// Struct for loaded programs - needed for sharing memory in exec
+
 struct loaded_program {
     char *name;
     size_t line_base; // change later to backing store file?
