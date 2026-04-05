@@ -1,91 +1,110 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h> // memset
-#include "shell.h" // MAX_USER_INPUT
-#include "shellmemory.h"
 #include "pcb.h"
+#include "shell.h" // MAX_USER_INPUT
+#include "os_structures.h"
+#include "interpreter.h" // ready_queue
 
-int pcb_has_next_instruction(struct PCB *pcb) {
-    return pcb->pc < pcb->line_count;
-}
+PCB* pcb_init(char* process_name) {
+    PCB *pcb = malloc(sizeof(PCB));
 
-size_t pcb_next_instruction(struct PCB *pcb) {
-    size_t i = pcb->line_base + pcb->pc;
-    pcb->pc++;
-    return i;
-}
+    static size_t pid_counter = 0; // retains value after function calls;
+    pcb->pid = pid_counter++;
 
-struct PCB *create_process(const char *filename) {
-    struct loaded_program *lp = get_lp(filename);
-    if (lp) { // can create PCB right away
-        lp->instances++;
-        struct PCB *pcb = malloc(sizeof(struct PCB));
-        static pid fresh_pid = 1;
-        pcb->pid = fresh_pid++;
-        pcb->name = strdup(filename);
-        pcb->next = NULL;
-        pcb->pc = 0;
-        pcb->line_base = lp->line_base;
-        pcb->line_count = lp->line_count;
-        pcb->duration = lp->line_count;
-        return pcb;
-    }
-
-    FILE *script = fopen(filename, "rt");
-    if (!script) {
-        perror("failed to open file for create_process");
-        return NULL;
-    }
-    struct PCB *pcb = create_process_from_FILE(script);
-    pcb->name = strdup(filename);
-    add_lp(filename, pcb->line_base, pcb->line_count);
-    return pcb;
-}
-
-
-struct PCB *create_process_from_FILE(FILE *script) {
-    struct PCB *pcb = malloc(sizeof(struct PCB));
-    static pid fresh_pid = 1;
-    pcb->pid = fresh_pid++;
-    pcb->name = "";
+    pcb->name = strdup(process_name);
     pcb->next = NULL;
     pcb->pc = 0;
-    pcb->line_count = 0;
-    pcb->line_base = 0;
-    char linebuf[MAX_USER_INPUT];
-    while (!feof(script)) {
-        memset(linebuf, 0, sizeof(linebuf));
-        fgets(linebuf, MAX_USER_INPUT, script);
+    pcb->page_table = malloc(sizeof(int) * pcb->page_count);
 
-        size_t index = allocate_line(linebuf);
-        if (index == (size_t)(-1)) {
-            free_pcb(pcb);
-            fclose(script);
-            return NULL;
-        }
+    // try and find pre-existing instance of process to copy from
+    int instance_exists = 0;
+    PCB* head = ready_queue->head;
 
-        if (pcb->line_count == 0) {
-            pcb->line_base = index;
+    while(head) {
+        if(strcmp(head->name, process_name) == 0) {
+            // found another instance
+            instance_exists = 1;
+            break;
         }
-        pcb->line_count++;
+        head = head->next;
     }
-    fclose(script);
+
+    // copy info from existing instance over
+    if(instance_exists) {
+        pcb->line_count = head->line_count;
+        pcb->page_count = head->page_count;
+
+        for (int i = 0; i < pcb->page_count; i++) {
+            pcb->page_table[i] = head->page_table[i];
+        }
+        
+    } 
+    else {
+        FILE* fptr = fopen(process_name, "rt");
+
+        char linebuf[MAX_USER_INPUT];
+        int line_count = 0;
+        while (!feof(fptr)) {
+            //memset(linebuf, 0, sizeof(linebuf));
+            fgets(linebuf, MAX_USER_INPUT, fptr);
+
+            size_t index = allocate_line(linebuf);
+            if (index == (size_t)(-1)) {
+                //free the pcb here
+                fclose(fptr);
+                return NULL;
+            }
+
+            line_count++;
+
+            // if (pcb->line_count == 0) {
+            //     //pcb->line_base = index;
+            // }
+            //pcb->line_count++;
+        }
+        fclose(fptr);
+        pcb->line_count = line_count;
+        pcb->page_count = (pcb->line_count + 2) / 3;  // ceiling integer division trick
+
+        for (int i = 0; i < pcb->page_count; i++) {
+            pcb->page_table[i] = -1;
+        }
+    }
+    
+    for (int i = 0; i < 2; i++) {
+        if (pcb->page_table[i] < 0) { //invalid, load page
+            // PROBLEM! CURRENT PCB BEING DEALT WITH NOT ALREADY IN READY QUEUE! SO, IT DOESN'T GET UPDATED AUTOMATICALLY BY LOAD_PAGE
+            int frame_loc = load_page(pcb->name, i);
+            update_pcb_pagetable(pcb, i, frame_loc);
+        }
+    }
     pcb->duration = pcb->line_count;
-    return pcb;
+
+
 }
 
-void free_pcb(struct PCB *pcb) {
-    struct loaded_program *lp = get_lp(pcb->name);
-    if (lp) {
-        lp->instances--;
-        if (lp->instances == 0) {
-            for (size_t ix = pcb->line_base; ix < pcb->line_base + pcb->line_count; ++ix) {
-                free_line(ix);
-            }
-        }
-    }
+void pcb_free(PCB* pcb) {
+    free(pcb->page_table);
     if (strcmp("", pcb->name)) {
         free(pcb->name);
     }
     free(pcb);
+}
+
+
+int pcb_has_next_instruction(PCB* pcb) {
+    return pcb->pc < pcb->line_count;
+}
+
+int pcb_next_instruction(PCB* pcb) {
+    // within same page
+    
+    int offset = pcb->pc % 3;
+    int pageno = pcb->pc / 3;
+
+    if (pcb->page_table[pageno] < 0) { // page fault! return back to interpreter with -1 to signal
+        return -1;
+    }
+    else {
+        pcb->pc++;
+        return pcb->page_table[pageno];
+    }
 }

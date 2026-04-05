@@ -1,29 +1,31 @@
 #pragma once
 #include <stdbool.h>
-struct queue;
-
 #include "schedule_policy.h"
+#include "pcb.h"
+
+typedef struct {
+    PCB *head;
+} Queue;
+
+Queue *alloc_queue();
+void free_queue(Queue *q);
 
 
-struct queue *alloc_queue();
-void free_queue(struct queue *q);
+int program_already_scheduled(Queue *q, char *name);
 
 
-int program_already_scheduled(struct queue *q, char *name);
+void enqueue_ignoring_priority(Queue *q, PCB *pcb);
 
 
-void enqueue_ignoring_priority(struct queue *q, struct PCB *pcb);
+void enqueue_fcfs(Queue *q, PCB *pcb);
+
+void enqueue_sjf(Queue *q, PCB *pcb);
+
+void enqueue_aging(Queue *q, PCB *pcb);
 
 
-void enqueue_fcfs(struct queue *q, struct PCB *pcb);
+struct PCB *dequeue_typical(Queue *q);
 
-void enqueue_sjf(struct queue *q, struct PCB *pcb);
+struct PCB *dequeue_aging(Queue *q);
 
-void enqueue_aging(struct queue *q, struct PCB *pcb);
-
-
-struct PCB *dequeue_typical(struct queue *q);
-
-struct PCB *dequeue_aging(struct queue *q);
-
-bool is_queue_empty(struct queue *q);
+bool is_queue_empty(Queue *q);

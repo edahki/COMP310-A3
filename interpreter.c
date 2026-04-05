@@ -25,9 +25,9 @@
 
 
 #include "pcb.h"
-#include "queue.h"
 #include "schedule_policy.h"
-
+#include "interpreter.h"
+#include "os_structures.h"
 
 #include <pthread.h>
 
@@ -419,17 +419,29 @@ int source(char *script) {
 }
 
 
-void runSchedule(struct queue *q, const struct schedule_policy *policy) {
-    struct PCB *next_pcb = policy->dequeue(q);
+void runSchedule(Queue *ready_queue, const struct schedule_policy *policy) {
+    PCB *next_pcb = policy->dequeue(ready_queue);
     while (next_pcb) {
-        next_pcb = policy->run_pcb(next_pcb);
-        if (next_pcb) policy->enqueue(q, next_pcb);
-        next_pcb = policy->dequeue(q);
+        //next_pcb = policy->run_pcb(next_pcb);
+        int flag = policy->run_pcb(next_pcb);
+        
+        if (flag == -2) { // pcb finished running, DO NOT re-enqueue
+            next_pcb = policy->dequeue(ready_queue);
+            continue;
+        }
+
+        // enqueue first so we can just call load_page and go through entire queue without having to separately update pcb of dequeued
+        if (next_pcb) policy->enqueue(ready_queue, next_pcb);
+
+        if (flag == -1) { // handle page fault
+            load_page(next_pcb->name, next_pcb->pc / 3);
+        }
+        next_pcb = policy->dequeue(ready_queue);
     }
 }
 
 // see doc in header file
-struct PCB *run_pcb_to_completion(struct PCB *pcb) {
+PCB *run_pcb_to_completion(PCB *pcb) {
     while (pcb_has_next_instruction(pcb)) {
         size_t instr = pcb_next_instruction(pcb);
         parseInput(get_line(instr));
@@ -439,46 +451,63 @@ struct PCB *run_pcb_to_completion(struct PCB *pcb) {
 }
 
 // see doc in header file
-struct PCB *run_pcb_for_n_steps(struct PCB *pcb, size_t n) {
-    debug("run n steps: n is %ld\n", n);
+PCB *run_pcb_for_n_steps(PCB *pcb, size_t n) {
     for (; n && pcb_has_next_instruction(pcb); --n) {
-        parseInput(get_line(pcb_next_instruction(pcb)));
+        int offset = pcb->pc % 3;
+        int page_idx_in_framestore = pcb_next_instruction(pcb);
+        if(page_idx_in_framestore == -1) { // page fault occurs, propogate upward!
+            return -1;
+        }
+        parseInput(framestore[page_idx_in_framestore]->lines[offset]);
     }
-    debug("run n steps: looped to %ld\n", n);
-    // The loop runs until either we've done n steps or the pcb is out of
-    // instructions,  whichever happens first. But they might also happen
-    // at the same time, in which case we should still clean up.
-    // So check if there are more instructions, not the value of n.
+ 
     if (pcb_has_next_instruction(pcb)) {
-        return pcb;
+        return 0;
     } else {
         free_pcb(pcb);
-        return NULL;
+        return -2;
     }
 }
 
+
+// // see doc in header file
+// PCB *run_pcb_for_n_steps(PCB *pcb, size_t n) {
+//     debug("run n steps: n is %ld\n", n);
+//     for (; n && pcb_has_next_instruction(pcb); --n) {
+//         parseInput(get_line(pcb_next_instruction(pcb)));
+//     }
+//     debug("run n steps: looped to %ld\n", n);
+//     // The loop runs until either we've done n steps or the pcb is out of
+//     // instructions,  whichever happens first. But they might also happen
+//     // at the same time, in which case we should still clean up.
+//     // So check if there are more instructions, not the value of n.
+//     if (pcb_has_next_instruction(pcb)) {
+//         return pcb;
+//     } else {
+//         free_pcb(pcb);
+//         return NULL;
+//     }
+// }
+
 static int background = false;
-static struct queue *q = NULL;
 static const struct schedule_policy *policy = NULL;
-
-
 
 void *scheduler_worker(void *arg) {
     // what the thread will do until it dies
     while (1) {
         pthread_mutex_lock(&q_mutex);
 
-        while (!quit_when_empty && is_queue_empty(q)) {
+        while (!quit_when_empty && is_queue_empty(ready_queue)) {
             // smart sleeping
             pthread_cond_wait(&q_cond, &q_mutex);
         }
 
-        if (quit_when_empty && is_queue_empty(q)) {
+        if (quit_when_empty && is_queue_empty(ready_queue)) {
             pthread_mutex_unlock(&q_mutex);
             pthread_exit(NULL);
         }
 
-        struct PCB *pcb = policy->dequeue(q);
+        PCB *pcb = policy->dequeue(ready_queue);
         pthread_mutex_unlock(&q_mutex);
 
         if (!pcb) continue;
@@ -487,7 +516,7 @@ void *scheduler_worker(void *arg) {
 
         if (pcb) {
             pthread_mutex_lock(&q_mutex);
-            policy->enqueue(q, pcb);
+            policy->enqueue(ready_queue, pcb);
             pthread_cond_signal(&q_cond);
             pthread_mutex_unlock(&q_mutex);
         }
@@ -532,19 +561,19 @@ int my_exec(char *args[], int args_size, bool MT) {
     if (!background_exec) {
         // normal exec
         reset_linememory_allocator();
-        assert(!q);
-        q = alloc_queue();
+        assert(!ready_queue);
+        ready_queue = alloc_queue();
     } else {
-        assert(q);
+        assert(ready_queue);
     }
 
 
     for (int n = 0; n < args_size; ++n) {
-        // if (program_already_scheduled(q, args[n])) {
+        // if (program_already_scheduled(ready_queue, args[n])) {
         //     printf("Bad command: script named %s already scheduled\n", args[n]);
         //     goto cleanup;
         // }
-        struct PCB *pcb = create_process(args[n]);
+        PCB *pcb = create_process(args[n]);
         if (!pcb) {
             printf("Failed to create process\n");
             goto cleanup;
@@ -552,18 +581,18 @@ int my_exec(char *args[], int args_size, bool MT) {
         // once threads exist, need to use mutex
         if (threads_created){
             pthread_mutex_lock(&q_mutex);
-            policy->enqueue(q, pcb);
+            policy->enqueue(ready_queue, pcb);
             pthread_cond_signal(&q_cond); // Wake up a worker
             pthread_mutex_unlock(&q_mutex);
         }
         else{
-            policy->enqueue(q, pcb);
+            policy->enqueue(ready_queue, pcb);
         }
         
     }
 
     if (background && !background_exec) {
-        struct PCB *pcb = create_process_from_FILE(stdin); // cheat to read until EOF char
+        PCB *pcb = create_process_from_FILE(stdin); // cheat to read until EOF char
         if (!pcb) {
             printf("Failed to create STDIN process\n");
             goto cleanup;
@@ -571,13 +600,13 @@ int my_exec(char *args[], int args_size, bool MT) {
         // once threads exist, need to use mutex
         if (threads_created){
             pthread_mutex_lock(&q_mutex);
-            policy->enqueue_ignoring_priority(q, pcb);
+            policy->enqueue_ignoring_priority(ready_queue, pcb);
             pthread_cond_signal(&q_cond); // Wake up a worker
             pthread_mutex_unlock(&q_mutex);
         }
         else{
             // dont need to worry about mutex
-            policy->enqueue_ignoring_priority(q, pcb);
+            policy->enqueue_ignoring_priority(ready_queue, pcb);
         }
         
     }
@@ -588,7 +617,7 @@ int my_exec(char *args[], int args_size, bool MT) {
             // simulate work (ie wait for them to be done)
             while (true) {
                 pthread_mutex_lock(&q_mutex);
-                bool empty = is_queue_empty(q); // Check if queue is empty
+                bool empty = is_queue_empty(ready_queue); // Check if queue is empty
                 pthread_mutex_unlock(&q_mutex);
                 if (empty) {
                     break; 
@@ -597,13 +626,13 @@ int my_exec(char *args[], int args_size, bool MT) {
             }
         }
         else{
-            runSchedule(q, policy);
+            runSchedule(ready_queue, policy);
         }
         if (background) return quit();
 
 top_level_cleanup:
-        free_queue(q);
-        q = NULL;
+        free_queue(ready_queue);
+        ready_queue = NULL;
         policy = NULL;
     }
 

@@ -2,32 +2,27 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include "pcb.h"
 #include "queue.h"
 
-struct queue {
-    struct PCB *head;
-};
-
-struct queue *alloc_queue() {
-    struct queue *q = malloc(sizeof(struct queue));
+Queue *alloc_queue() {
+    Queue *q = malloc(sizeof(Queue));
     q->head = NULL;
     return q;
 }
 
-void free_queue(struct queue *q) {
+void free_queue(Queue *q) {
 
-    struct PCB *p = q->head;
+    PCB *p = q->head;
     while (p) {
-        struct PCB *next = p->next;
+        PCB *next = p->next;
         free_pcb(p);
         p = next;
     }
     free(q);
 }
 
-int program_already_scheduled(struct queue *q, char *name) {
-    struct PCB *p = q->head;
+int program_already_scheduled(Queue *q, char *name) {
+    PCB *p = q->head;
     while (p) {
         if (strcmp(p->name, name) == 0) return 1;
         p = p->next;
@@ -36,14 +31,14 @@ int program_already_scheduled(struct queue *q, char *name) {
 }
 
 
-void enqueue_ignoring_priority(struct queue *q, struct PCB *pcb) {
+void enqueue_ignoring_priority(Queue *q, PCB *pcb) {
     pcb->next = q->head;
     q->head = pcb;
 }
 
-void enqueue_fcfs(struct queue *q, struct PCB *pcb) {
+void enqueue_fcfs(Queue *q, PCB *pcb) {
     assert(pcb->next == NULL);
-    struct PCB *p = q->head;
+    PCB *p = q->head;
 
     if (!p) {
         q->head = pcb;
@@ -57,10 +52,10 @@ void enqueue_fcfs(struct queue *q, struct PCB *pcb) {
     p->next = pcb;
 }
 
-void enqueue_sjf(struct queue *q, struct PCB *pcb) {
+void enqueue_sjf(Queue *q, PCB *pcb) {
     size_t dur = pcb->duration;
 
-    struct PCB *p = q->head;
+    PCB *p = q->head;
 
     if (!p || p->duration > dur) {
         pcb->next = p;
@@ -80,7 +75,7 @@ void enqueue_sjf(struct queue *q, struct PCB *pcb) {
     p->next = pcb;
 }
 
-void enqueue_aging(struct queue *q, struct PCB *pcb) {
+void enqueue_aging(Queue *q, PCB *pcb) {
 
     if (q->head && q->head->duration == pcb->duration && pcb->pc) {
         enqueue_ignoring_priority(q, pcb);
@@ -90,13 +85,13 @@ void enqueue_aging(struct queue *q, struct PCB *pcb) {
 }
 
 
-struct PCB *dequeue_typical(struct queue *q) {
+PCB *dequeue_typical(Queue *q) {
     if (q->head == NULL) {
         return NULL;
     }
 
     // q -> head -> next
-    struct PCB *head = q->head;
+    PCB *head = q->head;
     // q -> next
     q->head = head->next;
 
@@ -111,8 +106,8 @@ struct PCB *dequeue_typical(struct queue *q) {
 #define debug_with_age(q) __debug_with_age(q)
 #endif
 
-void __debug_with_age(struct queue *q) {
-    struct PCB *pcb = q->head;
+void __debug_with_age(Queue *q) {
+    PCB *pcb = q->head;
     printf("q");
     while (pcb) {
         printf(" -> %ld %s", pcb->duration, pcb->name);
@@ -121,11 +116,11 @@ void __debug_with_age(struct queue *q) {
     printf("\n");
 }
 
-struct PCB *dequeue_aging(struct queue *q) {
+PCB *dequeue_aging(Queue *q) {
     debug_with_age(q);
-    struct PCB *r = dequeue_typical(q);
+    PCB *r = dequeue_typical(q);
 
-    struct PCB *p = q->head;
+    PCB *p = q->head;
     while (p) {
         if (p->duration > 0) {
             p->duration--;
@@ -136,7 +131,7 @@ struct PCB *dequeue_aging(struct queue *q) {
     return r;
 }
 
-bool is_queue_empty(struct queue *q) {
+bool is_queue_empty(Queue *q) {
     if (q == NULL) return true;
     return q->head == NULL;
 }

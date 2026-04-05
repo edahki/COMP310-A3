@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void load_page(char* process_name, int pageno) {
+int load_page(char* process_name, int pageno) {
     int frame_loc = fetch_page(process_name, pageno);
 
     // iterate through ready queue, for each process
@@ -15,10 +15,17 @@ void load_page(char* process_name, int pageno) {
     while(head) {
         if(strcmp(head->name, process_name) == 0) {
             // update page table
-            head->page_table[pageno] = frame_loc;
+            update_pcb_pagetable(head, pageno, frame_loc);
         }
         head = head->next;
     }
+
+    return frame_loc;
+}
+
+// helper to update page table for an individual process
+void update_pcb_pagetable(PCB* pcb, int pageno, int frame_loc) {
+    pcb->page_table[pageno] = frame_loc;
 }
 
 int fetch_page(char* process_name, int pageno) {

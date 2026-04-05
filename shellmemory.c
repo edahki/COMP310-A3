@@ -3,11 +3,10 @@
 #include <stdio.h>
 #include <assert.h>
 #include "shellmemory.h"
-
+#include "os_structures.h"
 
 #define true 1
 #define false 0
-
 
 // Helper functions
 int match(char *model, char *var) {
@@ -36,7 +35,7 @@ size_t next_free_line = 0;
 
 void reset_linememory_allocator() {
     next_free_line = 0;
-    memset(loaded_programs, 0, sizeof(loaded_programs));
+    // memset(loaded_programs, 0, sizeof(loaded_programs));
     assert_linememory_is_empty();
 }
 
@@ -80,12 +79,21 @@ const char *get_line(size_t index) {
 
 // Infrastructure for memory sharing between processes
 
+// Struct for loaded programs - needed for sharing memory in exec
+
+typedef struct {
+    char *name;
+    size_t line_base; // change later to backing store file?
+    size_t line_count;
+    int instances;
+} loaded_program;
+
 // table of unique loaded programs
 // Note: Since array is so small no need for it to contain pointers to structs
-struct loaded_program loaded_programs[3]; // maximum 3 unique programs at a time (no nested calls to exec)
+loaded_program loaded_programs[3]; // maximum 3 unique programs at a time (no nested calls to exec)
 
 // finds loaded program based on name
-struct loaded_program *get_lp(char *name) {
+loaded_program *get_lp(char *name) {
     for (int i = 0; i < 3; i++) {
         if (loaded_programs[i].name && strcmp(loaded_programs[i].name, name) == 0) {
             return &loaded_programs[i];
@@ -110,14 +118,15 @@ int add_lp(char *name, size_t line_base, size_t line_count) {
 
 // decrements instances field of a loaded program
 // if instances == 0, don't do anything
-int decrement_instances_lp(char *name) {
-    struct loaded_program *lp = get_lp(name);
-    if (!lp) return 1;
-    if (lp->instances > 0) {
-        lp->instances--;
-    }
-    return 0;
-}
+// commented out for now
+// int decrement_instances_lp(char *name) {
+//     struct loaded_program *lp = get_lp(name);
+//     if (!lp) return 1;
+//     if (lp->instances > 0) {
+//         lp->instances--;
+//     }
+//     return 0;
+// }
 
 // Shell memory functions
 
@@ -126,7 +135,7 @@ struct memory_struct { // block or line
     char *value;
 };
 
-struct memory_struct shellmemory[MEM_SIZE];
+struct memory_struct shellmemory[VAR_STORE_SIZE];
 
 
 
