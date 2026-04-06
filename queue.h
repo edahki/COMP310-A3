@@ -1,6 +1,6 @@
 #pragma once
 #include <stdbool.h>
-#include "schedule_policy.h"
+//#include "schedule_policy.h"
 #include "pcb.h"
 
 typedef struct {
@@ -24,8 +24,8 @@ void enqueue_sjf(Queue *q, PCB *pcb);
 void enqueue_aging(Queue *q, PCB *pcb);
 
 
-struct PCB *dequeue_typical(Queue *q);
+PCB *dequeue_typical(Queue *q);
 
-struct PCB *dequeue_aging(Queue *q);
+PCB *dequeue_aging(Queue *q);
 
 bool is_queue_empty(Queue *q);

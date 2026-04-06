@@ -1,13 +1,6 @@
+#pragma once
 #include <stdio.h>
 #define MEM_SIZE 1000
-
-#ifndef FRAME_STORE_SIZE
-#define FRAME_STORE_SIZE 100 // default value
-#endif
-
-#ifndef VAR_STORE_SIZE
-#define VAR_STORE_SIZE 20 // default value
-#endif
 
 void mem_init();
 char *mem_get_value(char *var);

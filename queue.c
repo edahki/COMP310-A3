@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "queue.h"
 
 Queue *alloc_queue() {
@@ -15,7 +16,7 @@ void free_queue(Queue *q) {
     PCB *p = q->head;
     while (p) {
         PCB *next = p->next;
-        free_pcb(p);
+        pcb_free(p);
         p = next;
     }
     free(q);
@@ -110,7 +111,7 @@ void __debug_with_age(Queue *q) {
     PCB *pcb = q->head;
     printf("q");
     while (pcb) {
-        printf(" -> %ld %s", pcb->duration, pcb->name);
+        printf(" -> %d %s", pcb->duration, pcb->name);
         pcb = pcb->next;
     }
     printf("\n");

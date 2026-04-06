@@ -5,21 +5,21 @@
 #include "shellmemory.h"
 #include "pcb.h"
 
-int pcb_has_next_instruction(struct PCB *pcb) {
+int pcb_has_next_instruction(PCB *pcb) {
     return pcb->pc < pcb->line_count;
 }
 
-size_t pcb_next_instruction(struct PCB *pcb) {
+size_t pcb_page_of_next_instruction(PCB *pcb) {
     size_t i = pcb->line_base + pcb->pc;
     pcb->pc++;
     return i;
 }
 
-struct PCB *create_process(const char *filename) {
+PCB *create_process(const char *filename) {
     struct loaded_program *lp = get_lp(filename);
     if (lp) { // can create PCB right away
         lp->instances++;
-        struct PCB *pcb = malloc(sizeof(struct PCB));
+        PCB *pcb = malloc(sizeof(PCB));
         static pid fresh_pid = 1;
         pcb->pid = fresh_pid++;
         pcb->name = strdup(filename);
@@ -36,15 +36,15 @@ struct PCB *create_process(const char *filename) {
         perror("failed to open file for create_process");
         return NULL;
     }
-    struct PCB *pcb = create_process_from_FILE(script);
+    PCB *pcb = create_process_from_FILE(script);
     pcb->name = strdup(filename);
     add_lp(filename, pcb->line_base, pcb->line_count);
     return pcb;
 }
 
 
-struct PCB *create_process_from_FILE(FILE *script) {
-    struct PCB *pcb = malloc(sizeof(struct PCB));
+PCB *create_process_from_FILE(FILE *script) {
+    PCB *pcb = malloc(sizeof(PCB));
     static pid fresh_pid = 1;
     pcb->pid = fresh_pid++;
     pcb->name = "";
@@ -74,7 +74,7 @@ struct PCB *create_process_from_FILE(FILE *script) {
     return pcb;
 }
 
-void free_pcb(struct PCB *pcb) {
+void free_pcb(PCB *pcb) {
     struct loaded_program *lp = get_lp(pcb->name);
     if (lp) {
         lp->instances--;

@@ -7,6 +7,14 @@
 #include "interpreter.h"
 #include "shellmemory.h"
 
+#ifndef FRAME_STORE_SIZE
+#define FRAME_STORE_SIZE 100
+#endif
+
+#ifndef VAR_STORE_SIZE
+#define VAR_STORE_SIZE 20
+#endif
+
 // Start of everything
 int main(int argc, char *argv[]) {
     printf("Frame Store Size = %d; Variable Store Size = %d\n", FRAME_STORE_SIZE, VAR_STORE_SIZE);

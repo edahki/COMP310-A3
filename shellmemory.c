@@ -5,6 +5,14 @@
 #include "shellmemory.h"
 #include "os_structures.h"
 
+#ifndef FRAME_STORE_SIZE
+#define FRAME_STORE_SIZE 100
+#endif
+
+#ifndef VAR_STORE_SIZE
+#define VAR_STORE_SIZE 20
+#endif
+
 #define true 1
 #define false 0
 
@@ -20,8 +28,6 @@ int match(char *model, char *var) {
     } else
         return 0;
 }
-
-
 
 // for exec memory
 
@@ -128,7 +134,7 @@ int add_lp(char *name, size_t line_base, size_t line_count) {
 //     return 0;
 // }
 
-// Shell memory functions
+// Shell memory functions -- VARIABLE STORE
 
 struct memory_struct { // block or line
     char *var;
@@ -137,11 +143,9 @@ struct memory_struct { // block or line
 
 struct memory_struct shellmemory[VAR_STORE_SIZE];
 
-
-
 void mem_init() {
     int i;
-    for (i = 0; i < MEM_SIZE; i++) {
+    for (i = 0; i < VAR_STORE_SIZE; i++) {
         shellmemory[i].var = "none";
         shellmemory[i].value = "none";
     }
@@ -151,7 +155,7 @@ void mem_init() {
 void mem_set_value(char *var_in, char *value_in) {
     int i;
 
-    for (i = 0; i < MEM_SIZE; i++) {
+    for (i = 0; i < VAR_STORE_SIZE; i++) {
         if (strcmp(shellmemory[i].var, var_in) == 0) {
             shellmemory[i].value = strdup(value_in);
             return;
@@ -159,7 +163,7 @@ void mem_set_value(char *var_in, char *value_in) {
     }
 
     //Value does not exist, need to find a free spot.
-    for (i = 0; i < MEM_SIZE; i++) {
+    for (i = 0; i < VAR_STORE_SIZE; i++) {
         if (strcmp(shellmemory[i].var, "none") == 0) {
             shellmemory[i].var = strdup(var_in);
             shellmemory[i].value = strdup(value_in);
@@ -174,7 +178,7 @@ void mem_set_value(char *var_in, char *value_in) {
 char *mem_get_value(char *var_in) {
     int i;
 
-    for (i = 0; i < MEM_SIZE; i++) {
+    for (i = 0; i < VAR_STORE_SIZE; i++) {
         if (strcmp(shellmemory[i].var, var_in) == 0) {
             return strdup(shellmemory[i].value);
         }

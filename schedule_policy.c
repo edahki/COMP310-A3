@@ -1,10 +1,12 @@
+#include <stdlib.h>
 #include <string.h>
+
 #include "interpreter.h"
 #include "schedule_policy.h"
 #include "stdbool.h"
 
 #define MAKE_PREEMPTIVE_FN(n)                        \
-  struct PCB * run_steps_##n (struct PCB *pcb) {     \
+  PCB * run_steps_##n (PCB *pcb) {     \
     return run_pcb_for_n_steps(pcb, n);              \
   }
 

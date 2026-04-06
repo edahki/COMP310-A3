@@ -1,9 +1,10 @@
+#pragma once
 #include <stddef.h>
 #include "queue.h"
 int interpreter(char *command_args[], int args_size);
 int help();
 
-struct PCB *run_pcb_to_completion(struct PCB *pcb);
-struct PCB *run_pcb_for_n_steps(struct PCB *pcb, size_t n);
+PCB *run_pcb_to_completion(PCB *pcb);
+int run_pcb_for_n_steps(PCB *pcb, size_t n);
 
-Queue *ready_queue = NULL; // made this unstatic
+extern Queue *ready_queue; // made this unstatic

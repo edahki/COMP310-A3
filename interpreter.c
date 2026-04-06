@@ -45,6 +45,8 @@ static bool quit_when_empty = false; // for threads
 static pthread_mutex_t q_mutex = PTHREAD_MUTEX_INITIALIZER; // queue lock
 static pthread_cond_t q_cond = PTHREAD_COND_INITIALIZER;
 
+Queue *ready_queue = NULL; // pewijfopwegjqopwegjoqwejgpoqwegjioqwejgopwegjopiqwgjqw
+
 int badcommand() {
     printf("Unknown Command\n");
     return 1;
@@ -434,6 +436,7 @@ void runSchedule(Queue *ready_queue, const struct schedule_policy *policy) {
         if (next_pcb) policy->enqueue(ready_queue, next_pcb);
 
         if (flag == -1) { // handle page fault
+            printf("Page fault!\n");
             load_page(next_pcb->name, next_pcb->pc / 3);
         }
         next_pcb = policy->dequeue(ready_queue);
@@ -443,18 +446,18 @@ void runSchedule(Queue *ready_queue, const struct schedule_policy *policy) {
 // see doc in header file
 PCB *run_pcb_to_completion(PCB *pcb) {
     while (pcb_has_next_instruction(pcb)) {
-        size_t instr = pcb_next_instruction(pcb);
+        size_t instr = pcb_page_of_next_instruction(pcb);
         parseInput(get_line(instr));
     }
-    free_pcb(pcb);
+    pcb_free(pcb);
     return NULL;
 }
 
 // see doc in header file
-PCB *run_pcb_for_n_steps(PCB *pcb, size_t n) {
+int run_pcb_for_n_steps(PCB *pcb, size_t n) {
     for (; n && pcb_has_next_instruction(pcb); --n) {
         int offset = pcb->pc % 3;
-        int page_idx_in_framestore = pcb_next_instruction(pcb);
+        int page_idx_in_framestore = pcb_page_of_next_instruction(pcb);
         if(page_idx_in_framestore == -1) { // page fault occurs, propogate upward!
             return -1;
         }
@@ -464,7 +467,7 @@ PCB *run_pcb_for_n_steps(PCB *pcb, size_t n) {
     if (pcb_has_next_instruction(pcb)) {
         return 0;
     } else {
-        free_pcb(pcb);
+        pcb_free(pcb);
         return -2;
     }
 }
@@ -474,7 +477,7 @@ PCB *run_pcb_for_n_steps(PCB *pcb, size_t n) {
 // PCB *run_pcb_for_n_steps(PCB *pcb, size_t n) {
 //     debug("run n steps: n is %ld\n", n);
 //     for (; n && pcb_has_next_instruction(pcb); --n) {
-//         parseInput(get_line(pcb_next_instruction(pcb)));
+//         parseInput(get_line(pcb_page_of_next_instruction(pcb)));
 //     }
 //     debug("run n steps: looped to %ld\n", n);
 //     // The loop runs until either we've done n steps or the pcb is out of
@@ -484,7 +487,7 @@ PCB *run_pcb_for_n_steps(PCB *pcb, size_t n) {
 //     if (pcb_has_next_instruction(pcb)) {
 //         return pcb;
 //     } else {
-//         free_pcb(pcb);
+//         pcb_free(pcb);
 //         return NULL;
 //     }
 // }
@@ -573,19 +576,19 @@ int my_exec(char *args[], int args_size, bool MT) {
         //     printf("Bad command: script named %s already scheduled\n", args[n]);
         //     goto cleanup;
         // }
-        PCB *pcb = create_process(args[n]);
+        PCB *pcb = pcb_init(args[n]);
         if (!pcb) {
             printf("Failed to create process\n");
             goto cleanup;
         }
         // once threads exist, need to use mutex
-        if (threads_created){
+        if (threads_created) {
             pthread_mutex_lock(&q_mutex);
             policy->enqueue(ready_queue, pcb);
             pthread_cond_signal(&q_cond); // Wake up a worker
             pthread_mutex_unlock(&q_mutex);
         }
-        else{
+        else {
             policy->enqueue(ready_queue, pcb);
         }
         
@@ -612,7 +615,7 @@ int my_exec(char *args[], int args_size, bool MT) {
     }
 
     if (!background_exec) {
-        if (threads_created){
+        if (threads_created) {
             // threads are taking care of queue
             // simulate work (ie wait for them to be done)
             while (true) {
@@ -625,7 +628,7 @@ int my_exec(char *args[], int args_size, bool MT) {
                 usleep(1000); // Small sleep to prevent unnecessary spin
             }
         }
-        else{
+        else {
             runSchedule(ready_queue, policy);
         }
         if (background) return quit();
