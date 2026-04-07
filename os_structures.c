@@ -5,8 +5,10 @@
 #include "os_structures.h"
 #include "page.h"
 #include "interpreter.h"
+#include "linked_list.h"
 
 Page* framestore[FRAME_STORE_SIZE_SLOTS];
+LinkedList* bryan_johnson;
 
 int load_page(char* process_name, int pageno) {
     int frame_loc = fetch_page(process_name, pageno);
