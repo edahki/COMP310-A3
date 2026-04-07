@@ -2,10 +2,10 @@
 #include <stdio.h>
 #include "pcb.h"
 #include "page.h"
-#define FRAME_STORE_SIZE_SLOTS (FRAME_STORE_SIZE / 3)
 #ifndef FRAME_STORE_SIZE
 #define FRAME_STORE_SIZE 100 // default value
 #endif
+#define FRAME_STORE_SIZE_SLOTS (FRAME_STORE_SIZE / 3)
 
 extern Page* framestore[FRAME_STORE_SIZE_SLOTS]; // length set by compile flag
 
