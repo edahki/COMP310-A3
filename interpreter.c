@@ -28,6 +28,7 @@
 #include "schedule_policy.h"
 #include "interpreter.h"
 #include "os_structures.h"
+#include "linked_list.h"
 
 #include <pthread.h>
 
@@ -45,7 +46,7 @@ static bool quit_when_empty = false; // for threads
 static pthread_mutex_t q_mutex = PTHREAD_MUTEX_INITIALIZER; // queue lock
 static pthread_cond_t q_cond = PTHREAD_COND_INITIALIZER;
 
-Queue *ready_queue = NULL; // pewijfopwegjqopwegjoqwejgpoqwegjioqwejgopwegjopiqwgjqw
+Queue *ready_queue = NULL;
 
 int badcommand() {
     printf("Unknown Command\n");
@@ -437,8 +438,17 @@ void runSchedule(Queue *ready_queue, const struct schedule_policy *policy) {
 
         if (flag == -1) { // handle page fault
             printf("Page fault!\n");
-            load_page(next_pcb->name, next_pcb->pc / 3);
+            int frame_loc = load_page(next_pcb->name, next_pcb->pc / 3);
+
+            // enqueue page to head of LRU_list
+            enqueuehead_ll(LRU_list, frame_loc, next_pcb->name, pcb_page_of_next_instruction(next_pcb));
         }
+        else {
+            int frame_loc = pcb_current_page_frame_loc(next_pcb);
+            move_to_front_ll(LRU_list, frame_loc);
+        }
+
+        // IF NOT PAGE FAULT BUT STILL HAS TO RUN, MUST MOVE TO HEAD OF LRU_LISTsadbnhgvcmdgj
         next_pcb = policy->dequeue(ready_queue);
     }
 }
@@ -570,7 +580,8 @@ int my_exec(char *args[], int args_size, bool MT) {
         assert(ready_queue);
     }
 
-
+    LRU_list = init_ll();
+    
     for (int n = 0; n < args_size; ++n) {
         // if (program_already_scheduled(ready_queue, args[n])) {
         //     printf("Bad command: script named %s already scheduled\n", args[n]);
@@ -637,6 +648,7 @@ top_level_cleanup:
         free_queue(ready_queue);
         ready_queue = NULL;
         policy = NULL;
+        free_ll(LRU_list);
     }
 
 background_cleanup:

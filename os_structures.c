@@ -5,10 +5,9 @@
 #include "os_structures.h"
 #include "page.h"
 #include "interpreter.h"
-#include "linked_list.h"
 
 Page* framestore[FRAME_STORE_SIZE_SLOTS];
-LinkedList* bryan_johnson;
+LinkedList* LRU_list;
 
 int load_page(char* process_name, int pageno) {
     int frame_loc = fetch_page(process_name, pageno);
@@ -44,20 +43,21 @@ int fetch_page(char* process_name, int pageno) {
     }
     // empty slot not found, so must evict page
     //printf("EVICTING PAGE\n");
-    int slot = evict(process_name);
+    int slot = evict();
     framestore[slot] = loaded;
     return slot;
 }
 
-int evict(char* process_name) {
-
+int evict() {
     // find pageno to evict (LRU)
+    LinkedList* evicted = pop_ll(LRU_list); // get tail of LRU list
     
-    evict_page(process_name, 0);
-    return 0; // choose 0 to evict for now -- change to LRU policy later
+    int frame_loc = evict_page(evicted->process_name, evicted->pageno);
+    free_ll(evicted);
+    return frame_loc;
 }
 
-void evict_page(char* process_name, int pageno) {
+int evict_page(char* process_name, int pageno) {
     
     int frame_loc = -1;
 
@@ -75,6 +75,10 @@ void evict_page(char* process_name, int pageno) {
         }
         head = head->next;
     }
+    
+    if (frame_loc < 0) {
+        printf("what happened");
+    }
 
     Page* evicted_page = framestore[frame_loc];
     framestore[frame_loc] = NULL;
@@ -86,4 +90,6 @@ void evict_page(char* process_name, int pageno) {
     printf("End of victim page contents.\n");
 
     free_page(evicted_page);
+
+    return frame_loc;
 }

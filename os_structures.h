@@ -2,12 +2,15 @@
 #include <stdio.h>
 #include "pcb.h"
 #include "page.h"
+#include "linked_list.h"
+
 #ifndef FRAME_STORE_SIZE
 #define FRAME_STORE_SIZE 100 // default value
 #endif
 #define FRAME_STORE_SIZE_SLOTS (FRAME_STORE_SIZE / 3)
 
 extern Page* framestore[FRAME_STORE_SIZE_SLOTS]; // length set by compile flag
+extern LinkedList* LRU_list;
 
 int fetch_page(char* process_name, int pageno);
 // fetch desired page from disk
@@ -34,12 +37,12 @@ int load_page(char* process_name, int pageno);
 
 void update_pcb_pagetable(PCB* pcb, int pageno, int frame_loc);
 
-int evict(char* process_name);
+int evict();
 // uses LRU policy to evict page from frame_store by calling evict_page
 // returns the index in framestore of evicted page
 
 
-void evict_page(char* process_name, int pageno);
+int evict_page(char* process_name, int pageno);
 // helper:
 // find all currently existing pcbs for 'process_name' (using map outlined above)
 // for each pcb found:

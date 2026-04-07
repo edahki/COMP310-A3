@@ -1,39 +1,56 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <string.h>
 #include "linked_list.h"
 
 // Linked list interface for LRU implenetation
 
 // Initializes LL
 LinkedList* init_ll() {
-    LinkedList* dummy = createnode_ll(0);
+    LinkedList* dummy = createnode_ll(0, "", -1);
     return dummy;
 }
 
 // Helper method for other queue operations
-LinkedList* createnode_ll(int e) {
+LinkedList* createnode_ll(int e, char* process_name, int pageno) {
     LinkedList* node = malloc(sizeof(LinkedList));
     node->e = e;
+    node->process_name = strdup(process_name);
+    node->pageno = pageno;
     node->next = 0; // null ptr
     return node;
 }
 
-/* TODO:
-    - void movetofront_ll(LinkedList* ll) ✅
-    - int pop_ll() // pops node from tail, returns node->e ❌
-*/
-
 // Enqueues int to the back of the LL
-int enqueue_ll(LinkedList* ll, int e) {
+int enqueue_ll(LinkedList* ll, int e, char* process_name, int pageno) {
     LinkedList* curr = ll;
     while (curr->next) {
         curr = curr->next;
     }
-    LinkedList* new = createnode_q(e);
+    LinkedList* new = createnode_ll(e, process_name, pageno);
     curr->next = new;
 
     return 0;
+}
+
+// helper for move_to_front_ll - finds node in linked list with element e
+// works because all int elements in our linked lists are unique
+// NOTE: returns node BEFORE target
+LinkedList* find_ll(LinkedList* ll, int e) {
+    if (isempty_ll(ll)) {
+        return NULL;
+    }
+    LinkedList* prev = ll;
+    LinkedList* head = ll->next;
+    while (head) {
+        if (head->e == e) {
+            return prev;
+        }
+        prev = head;
+        head = head->next;
+    }
+    return NULL; // node doesn't exist
 }
 
 int move_to_front_ll(LinkedList* ll, int e) {
@@ -54,25 +71,6 @@ int move_to_front_ll(LinkedList* ll, int e) {
     node_to_move->next = temp;
 
     return 0;  
-}
-
-// helper for move_to_front_ll - finds node in linked list with element e
-// works because all int elements in our linked lists are unique
-// NOTE: returns node BEFORE target
-LinkedList* find_ll(LinkedList* ll, int e) {
-    if (isempty_ll(ll)) {
-        return NULL;
-    }
-    LinkedList* prev = ll;
-    LinkedList* head = ll->next;
-    while (head) {
-        if (head->e == e) {
-            return prev;
-        }
-        prev = head;
-        head = head->next;
-    }
-    return NULL; // node doesn't exist
 }
 
 LinkedList* get_ll(LinkedList* ll, int idx) { // gets previous element of element at specified index, or idx < 0 to get at last index
@@ -99,40 +97,47 @@ LinkedList* get_ll(LinkedList* ll, int idx) { // gets previous element of elemen
 
 // Enqueues int at the head of the specified LL
 
-int enqueuehead_ll(LinkedList* ll, int e) {
+int enqueuehead_ll(LinkedList* ll, int e, char* process_name, int pageno) {
     LinkedList* temp = ll->next;
-    LinkedList* newhead = createnode_q(e);
+    LinkedList* newhead = createnode_ll(e, process_name, pageno);
     ll->next = newhead;
     newhead->next = temp;
     return 0;
 }
 
-int pop_ll(LinkedList* ll) {
+LinkedList* pop_ll(LinkedList* ll) {
     if(isempty_ll(ll)) {
-        return -1; // ERROR: (note all elements in LL must be non-negative ints)
+        return NULL; // ERROR: (note all elements in LL must be non-negative ints)
     }
     LinkedList* before_tail = get_ll(ll, -1);
     LinkedList* tail = before_tail->next;
 
     //remove tail node from ll
-    int tail_e = tail->e;
     before_tail->next = NULL;
-    free_ll(tail);
     
-    return tail_e;
+    return tail;
+}
+
+void deletenode_ll(LinkedList* ll, int e) {
+    LinkedList* prev = find_ll(ll, e);
+    LinkedList* to_remove = prev->next;
+    prev->next = to_remove->next;
+    to_remove->next = NULL;
+
+    free_ll(to_remove);
 }
 
 // Dequeues a int from the specified LL
-int dequeue_ll(LinkedList* q) {
-    if (!q->next) {
+int dequeue_ll(LinkedList* ll) {
+    if (!ll->next) {
         printf("LL is empty");
         return NULL; // empty queue
     }
 
-    LinkedList* first = q->next;
+    LinkedList* first = ll->next;
     int value = first->e;
 
-    q->next = first->next;
+    ll->next = first->next;
     free(first);
 
     return value;
@@ -162,6 +167,7 @@ void free_ll(LinkedList* ll) {
     while (curr) {
         LinkedList* temp = curr;
         curr = curr->next;
+        free(temp->process_name);
         free(temp);
     }
 }

@@ -57,13 +57,7 @@ PCB* pcb_init(char* process_name) {
                 fclose(fptr);
                 return NULL;
             }
-
             line_count++;
-
-            // if (pcb->line_count == 0) {
-            //     //pcb->line_base = index;
-            // }
-            //pcb->line_count++;
         }
         fclose(fptr);
         pcb->line_count = line_count;
@@ -77,7 +71,6 @@ PCB* pcb_init(char* process_name) {
     
     for (int i = 0; i < 2; i++) {
         if (pcb->page_table[i] < 0) { //invalid, load page
-            // PROBLEM! CURRENT PCB BEING DEALT WITH NOT ALREADY IN READY QUEUE! SO, IT DOESN'T GET UPDATED AUTOMATICALLY BY LOAD_PAGE
             int frame_loc = load_page(pcb->name, i);
             update_pcb_pagetable(pcb, i, frame_loc);
         }
@@ -113,6 +106,10 @@ int pcb_page_of_next_instruction(PCB* pcb) { //NOTE: only gets location of page,
         pcb->pc++;
         return pcb->page_table[pageno];
     }
+}
+
+int pcb_current_page_frame_loc(PCB* pcb) {
+    return pcb->page_table[pcb->pc / 3];
 }
 
 // to avoid compilation errors

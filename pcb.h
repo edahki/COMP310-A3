@@ -19,5 +19,6 @@ PCB* pcb_init(char* process_name);
 void pcb_free(PCB* pcb);
 int pcb_has_next_instruction(PCB* pcb);
 int pcb_page_of_next_instruction(PCB* pcb);
+int pcb_current_page_frame_loc(PCB* pcb);
 
 PCB *create_process_from_FILE(FILE *script);
