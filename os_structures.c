@@ -51,15 +51,14 @@ int fetch_page(char* process_name, int pageno) {
 int evict() {
     // find pageno to evict (LRU)
     LinkedList* evicted = pop_ll(LRU_list); // get tail of LRU list
+    int frame_loc = evicted->e;
     
-    int frame_loc = evict_page(evicted->process_name, evicted->pageno);
+    evict_page(evicted->process_name, evicted->pageno, frame_loc);
     free_ll(evicted);
     return frame_loc;
 }
 
-int evict_page(char* process_name, int pageno) {
-    
-    int frame_loc = -1;
+int evict_page(char* process_name, int pageno, int frame_loc) {
 
     // find page's location in framestore by iterating through ready queue, cleaning each matching process instance's pcb along the way
 
@@ -67,27 +66,20 @@ int evict_page(char* process_name, int pageno) {
 
     while (head) {
         if (strcmp(head->name, process_name) == 0) {
-            if (frame_loc < 0) {
-                frame_loc = head->page_table[pageno];
-            }
             // update page table
             update_pcb_pagetable(head, pageno, -1); // update page table to invalid
         }
         head = head->next;
     }
-    
-    if (frame_loc < 0) {
-        printf("what happened");
-    }
 
     Page* evicted_page = framestore[frame_loc];
     framestore[frame_loc] = NULL;
 
-    printf("Victim page contents:\n");
+    printf("Victim page contents:\n\n");
     for (int i = 0; i < 3; i++) {
         printf("%s", evicted_page->lines[i]);
     }
-    printf("End of victim page contents.\n");
+    printf("\nEnd of victim page contents.\n");
 
     free_page(evicted_page);
 

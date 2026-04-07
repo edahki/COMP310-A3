@@ -87,7 +87,7 @@ LinkedList* get_ll(LinkedList* ll, int idx) { // gets previous element of elemen
         }
     }
     else {
-        while (head->next->next) {
+        while (head->next && head->next->next) {
             head = head->next;
         }
     }

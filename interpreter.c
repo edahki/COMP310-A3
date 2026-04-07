@@ -417,7 +417,7 @@ int source(char *script) {
     // can be done by moving all logic to my_exec
     // and calling that from here with a default scheduling policy
     // since only 1 pcb anyway
-    char *args[2] = {script, "FCFS"};
+    char *args[2] = {script, "RR"};
     return my_exec(args, 2, false);
 }
 
@@ -441,7 +441,7 @@ void runSchedule(Queue *ready_queue, const struct schedule_policy *policy) {
             int frame_loc = load_page(next_pcb->name, next_pcb->pc / 3);
 
             // enqueue page to head of LRU_list
-            enqueuehead_ll(LRU_list, frame_loc, next_pcb->name, pcb_page_of_next_instruction(next_pcb));
+            enqueuehead_ll(LRU_list, frame_loc, next_pcb->name, next_pcb->pc / 3);
         }
         else {
             int frame_loc = pcb_current_page_frame_loc(next_pcb);

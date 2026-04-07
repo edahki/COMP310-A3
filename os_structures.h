@@ -42,7 +42,7 @@ int evict();
 // returns the index in framestore of evicted page
 
 
-int evict_page(char* process_name, int pageno);
+int evict_page(char* process_name, int pageno, int frame_loc);
 // helper:
 // find all currently existing pcbs for 'process_name' (using map outlined above)
 // for each pcb found:
