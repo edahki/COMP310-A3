@@ -46,7 +46,7 @@ static bool quit_when_empty = false; // for threads
 static pthread_mutex_t q_mutex = PTHREAD_MUTEX_INITIALIZER; // queue lock
 static pthread_cond_t q_cond = PTHREAD_COND_INITIALIZER;
 
-Queue *ready_queue = NULL;
+Queue *ready_queue = NULL; // initialize ready queue
 
 int badcommand() {
     printf("Unknown Command\n");
@@ -425,10 +425,9 @@ int source(char *script) {
 void runSchedule(Queue *ready_queue, const struct schedule_policy *policy) {
     PCB *next_pcb = policy->dequeue(ready_queue);
     while (next_pcb) {
-        //next_pcb = policy->run_pcb(next_pcb);
         int flag = policy->run_pcb(next_pcb);
         
-        if (flag == -2) { // pcb finished running, DO NOT re-enqueue
+        if (flag == -2) { // pcb finished running, do NOT re-enqueue
             next_pcb = policy->dequeue(ready_queue);
             continue;
         }
@@ -440,15 +439,13 @@ void runSchedule(Queue *ready_queue, const struct schedule_policy *policy) {
             printf("Page fault!\n");
             int frame_loc = load_page(next_pcb->name, next_pcb->pc / 3);
 
-            // enqueue page to head of LRU_list
+            // enqueue frame_loc to head of LRU_list
             enqueuehead_ll(LRU_list, frame_loc, next_pcb->name, next_pcb->pc / 3);
-        }
-        else {
+        } else {
+            // if not page fault but still has to run, must move to head of LRU_list
             int frame_loc = pcb_current_page_frame_loc(next_pcb);
             move_to_front_ll(LRU_list, frame_loc);
         }
-
-        // IF NOT PAGE FAULT BUT STILL HAS TO RUN, MUST MOVE TO HEAD OF LRU_LISTsadbnhgvcmdgj
         next_pcb = policy->dequeue(ready_queue);
     }
 }
@@ -463,12 +460,15 @@ PCB *run_pcb_to_completion(PCB *pcb) {
     return NULL;
 }
 
-// see doc in header file
+// We always use this in the test cases
+// returns -1 if page fault occurs
+// returns -2 if PCB finished executing
+// returns 0 if PCB still has instructions after n steps
 int run_pcb_for_n_steps(PCB *pcb, size_t n) {
     for (; n && pcb_has_next_instruction(pcb); --n) {
         int offset = pcb->pc % 3;
         int page_idx_in_framestore = pcb_page_of_next_instruction(pcb);
-        if(page_idx_in_framestore == -1) { // page fault occurs, propogate upward!
+        if (page_idx_in_framestore == -1) { // page fault occurs, propogate upward!
             return -1;
         }
         parseInput(framestore[page_idx_in_framestore]->lines[offset]);

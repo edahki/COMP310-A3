@@ -10,7 +10,6 @@
 #include "linked_list.h"
 
 // initializes a PCB with process_name
-
 PCB* pcb_init(char* process_name) {
     PCB *pcb = malloc(sizeof(PCB));
 
@@ -51,13 +50,6 @@ PCB* pcb_init(char* process_name) {
         int line_count = 0;
         while (!feof(fptr)) {
             fgets(linebuf, MAX_USER_INPUT, fptr);
-
-            size_t index = allocate_line(linebuf);
-            if (index == (size_t)(-1)) {
-                // free the pcb here
-                fclose(fptr);
-                return NULL;
-            }
             line_count++;
         }
         fclose(fptr);
@@ -74,10 +66,10 @@ PCB* pcb_init(char* process_name) {
         if (pcb->page_table[i] < 0) { //invalid, load page
             int frame_loc = load_page(pcb->name, i);
             update_pcb_pagetable(pcb, i, frame_loc);
-            enqueuehead_ll(LRU_list, frame_loc, pcb->name, i);
+            enqueuehead_ll(LRU_list, frame_loc, pcb->name, i); // create node for frame_loc at head of LRU_list
         }
         else {
-            move_to_front_ll(LRU_list, pcb->page_table[i]);
+            move_to_front_ll(LRU_list, pcb->page_table[i]); // move frame_loc to front of LRU_list
         }
     }
     pcb->duration = pcb->line_count;
@@ -102,14 +94,12 @@ int pcb_has_next_instruction(PCB* pcb) {
 // gets page of next instruction from PCB's PC
 // note: only gets location of page, we get offset before in top level
 int pcb_page_of_next_instruction(PCB* pcb) {
-    // within same page
     
     int pageno = pcb->pc / 3;
 
     if (pcb->page_table[pageno] < 0) { // page fault! return back to interpreter with -1 to signal
         return -1;
-    }
-    else {
+    } else {
         pcb->pc++;
         return pcb->page_table[pageno];
     }
