@@ -17,7 +17,7 @@
 
 // Start of everything
 int main(int argc, char *argv[]) {
-    printf("Frame Store Size = %d; Variable Store Size = %d\n", FRAME_STORE_SIZE, VAR_STORE_SIZE);
+    printf("Frame Store Size = %d; Variable Store Size = %d\n", FRAME_STORE_SIZE, VAR_STORE_SIZE); // message at shell startup - shows frame and variable store size
 
     char prompt = '$';          // Shell prompt
     char userInput[MAX_USER_INPUT];     // user's input stored here

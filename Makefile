@@ -1,5 +1,6 @@
-framesize ?= 100
-varmemsize ?= 20
+# default values for framesize and varmemsize if not defined during make
+framesize ?= 18
+varmemsize ?= 10
 
 CC=gcc
 

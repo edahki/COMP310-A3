@@ -6,7 +6,7 @@
 #include "os_structures.h"
 
 #ifndef VAR_STORE_SIZE
-#define VAR_STORE_SIZE 20
+#define VAR_STORE_SIZE 10 // default value of variable store size if not set by Makefile
 #endif
 
 #define true 1
@@ -25,6 +25,8 @@ int match(char *model, char *var) {
         return 0;
 }
 
+// Note: The program_line struct and its methods are no longer used for memory
+// management. See os_structures.c for the frame store and other memory structures for A3.
 // for exec memory
 
 struct program_line {
@@ -37,7 +39,6 @@ size_t next_free_line = 0;
 
 void reset_linememory_allocator() {
     next_free_line = 0;
-    // memset(loaded_programs, 0, sizeof(loaded_programs));
     assert_linememory_is_empty();
 }
 
@@ -79,65 +80,15 @@ const char *get_line(size_t index) {
     return linememory[index].line;
 }
 
-// Infrastructure for memory sharing between processes
-
-// Struct for loaded programs - needed for sharing memory in exec
-
-typedef struct {
-    char *name;
-    size_t line_base; // change later to backing store file?
-    size_t line_count;
-    int instances;
-} loaded_program;
-
-// table of unique loaded programs
-// Note: Since array is so small no need for it to contain pointers to structs
-loaded_program loaded_programs[3]; // maximum 3 unique programs at a time (no nested calls to exec)
-
-// finds loaded program based on name
-loaded_program *get_lp(char *name) {
-    for (int i = 0; i < 3; i++) {
-        if (loaded_programs[i].name && strcmp(loaded_programs[i].name, name) == 0) {
-            return &loaded_programs[i];
-        }
-    }
-    return NULL; // program doesn't exist
-}
-
-// adds loaded program (note: never called if loaded program with 'name' already exists)
-int add_lp(char *name, size_t line_base, size_t line_count) {
-    for (int i = 0; i < 3; i++) {
-        if (!loaded_programs[i].name) { // available slot
-            loaded_programs[i].name = strdup(name);
-            loaded_programs[i].line_base = line_base;
-            loaded_programs[i].line_count = line_count;
-            loaded_programs[i].instances = 1;
-            return 0;
-        }
-    }
-    return 1;
-}
-
-// decrements instances field of a loaded program
-// if instances == 0, don't do anything
-// commented out for now
-// int decrement_instances_lp(char *name) {
-//     struct loaded_program *lp = get_lp(name);
-//     if (!lp) return 1;
-//     if (lp->instances > 0) {
-//         lp->instances--;
-//     }
-//     return 0;
-// }
-
-// Shell memory functions -- VARIABLE STORE
+// Shell memory functions -- This is the variable store
+// Nothing changed from starter code
 
 struct memory_struct { // block or line
     char *var;
     char *value;
 };
 
-struct memory_struct shellmemory[VAR_STORE_SIZE];
+struct memory_struct shellmemory[VAR_STORE_SIZE]; // use VAR_STORE_SIZE instead of MEM_SIZE
 
 void mem_init() {
     int i;

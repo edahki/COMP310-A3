@@ -453,7 +453,7 @@ void runSchedule(Queue *ready_queue, const struct schedule_policy *policy) {
     }
 }
 
-// see doc in header file
+// We never use this in the test cases since scheduling policy is always RR
 PCB *run_pcb_to_completion(PCB *pcb) {
     while (pcb_has_next_instruction(pcb)) {
         size_t instr = pcb_page_of_next_instruction(pcb);
@@ -481,26 +481,6 @@ int run_pcb_for_n_steps(PCB *pcb, size_t n) {
         return -2;
     }
 }
-
-
-// // see doc in header file
-// PCB *run_pcb_for_n_steps(PCB *pcb, size_t n) {
-//     debug("run n steps: n is %ld\n", n);
-//     for (; n && pcb_has_next_instruction(pcb); --n) {
-//         parseInput(get_line(pcb_page_of_next_instruction(pcb)));
-//     }
-//     debug("run n steps: looped to %ld\n", n);
-//     // The loop runs until either we've done n steps or the pcb is out of
-//     // instructions,  whichever happens first. But they might also happen
-//     // at the same time, in which case we should still clean up.
-//     // So check if there are more instructions, not the value of n.
-//     if (pcb_has_next_instruction(pcb)) {
-//         return pcb;
-//     } else {
-//         pcb_free(pcb);
-//         return NULL;
-//     }
-// }
 
 static int background = false;
 static const struct schedule_policy *policy = NULL;

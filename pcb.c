@@ -9,19 +9,21 @@
 #include "interpreter.h" // ready_queue
 #include "linked_list.h"
 
+// initializes a PCB with process_name
+
 PCB* pcb_init(char* process_name) {
     PCB *pcb = malloc(sizeof(PCB));
 
-    static size_t pid_counter = 0; // retains value after function calls;
+    static size_t pid_counter = 0; // retains value after function calls
     pcb->pid = pid_counter++;
 
     pcb->name = strdup(process_name);
     pcb->next = NULL;
     pcb->pc = 0;
 
-    // try and find pre-existing instance of process to copy from
+    // try to find pre-existing instance of process to copy from
     int instance_exists = 0;
-    PCB* head = ready_queue ? ready_queue->head : NULL; // altered from before
+    PCB* head = ready_queue ? ready_queue->head : NULL; 
 
     while (head) {
         if (strcmp(head->name, process_name) == 0) {
@@ -88,6 +90,7 @@ PCB* pcb_init(char* process_name) {
 
 }
 
+// frees a PCB from memory
 void pcb_free(PCB* pcb) {
     free(pcb->page_table);
     if (strcmp("", pcb->name)) {
@@ -96,12 +99,13 @@ void pcb_free(PCB* pcb) {
     free(pcb);
 }
 
-
 int pcb_has_next_instruction(PCB* pcb) {
     return pcb->pc < pcb->line_count;
 }
 
-int pcb_page_of_next_instruction(PCB* pcb) { //NOTE: only gets location of page, we get offset before in top level
+// gets page of next instruction from PCB's PC
+// note: only gets location of page, we get offset before in top level
+int pcb_page_of_next_instruction(PCB* pcb) {
     // within same page
     
     int pageno = pcb->pc / 3;
@@ -115,11 +119,12 @@ int pcb_page_of_next_instruction(PCB* pcb) { //NOTE: only gets location of page,
     }
 }
 
+// gets the current page frame location from a given PCB's program counter
 int pcb_current_page_frame_loc(PCB* pcb) {
     return pcb->page_table[pcb->pc / 3];
 }
 
-// to avoid compilation errors
+// kept in to avoid compilation errors - we never actually call this in any of the test cases
 PCB *create_process_from_FILE(FILE *script) {
     printf("You shouldn't see me");
     return NULL;

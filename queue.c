@@ -12,7 +12,6 @@ Queue *alloc_queue() {
 }
 
 void free_queue(Queue *q) {
-
     PCB *p = q->head;
     while (p) {
         PCB *next = p->next;
