@@ -27,7 +27,7 @@ PCB* pcb_init(char* process_name) {
 
     while (head) {
         if (strcmp(head->name, process_name) == 0) {
-            // found another instance
+            // found another instance of process
             instance_exists = 1;
             break;
         }
@@ -40,18 +40,16 @@ PCB* pcb_init(char* process_name) {
         pcb->page_count = head->page_count;
         pcb->page_table = malloc(sizeof(int) * pcb->page_count);
 
-        for (int i = 0; i < pcb->page_count; i++) {
+        for (int i = 0; i < pcb->page_count; i++) { // populate page table
             pcb->page_table[i] = head->page_table[i];
         }
         
-    } 
-    else {
+    } else { // need to open file
         FILE* fptr = fopen(process_name, "rt");
 
         char linebuf[MAX_USER_INPUT];
         int line_count = 0;
         while (!feof(fptr)) {
-            //memset(linebuf, 0, sizeof(linebuf));
             fgets(linebuf, MAX_USER_INPUT, fptr);
 
             size_t index = allocate_line(linebuf);
