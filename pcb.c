@@ -62,7 +62,7 @@ PCB* pcb_init(char* process_name) {
         }
     }
     
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 2; i++) { // load first two pages into frame store
         if (pcb->page_table[i] < 0) { //invalid, load page
             int frame_loc = load_page(pcb->name, i);
             update_pcb_pagetable(pcb, i, frame_loc);
