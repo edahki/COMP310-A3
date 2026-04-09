@@ -563,10 +563,6 @@ int my_exec(char *args[], int args_size, bool MT) {
     LRU_list = init_ll();
     
     for (int n = 0; n < args_size; ++n) {
-        // if (program_already_scheduled(ready_queue, args[n])) {
-        //     printf("Bad command: script named %s already scheduled\n", args[n]);
-        //     goto cleanup;
-        // }
         PCB *pcb = pcb_init(args[n]);
         if (!pcb) {
             printf("Failed to create process\n");

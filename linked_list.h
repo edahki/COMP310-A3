@@ -1,5 +1,7 @@
 #pragma once
 
+// Linked list interface for LRU implementation
+
 typedef struct LinkedList {
     int e; // element -- index of frame store
     char* process_name;

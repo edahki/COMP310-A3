@@ -74,11 +74,9 @@ PCB* pcb_init(char* process_name) {
         if (pcb->page_table[i] < 0) { //invalid, load page
             int frame_loc = load_page(pcb->name, i);
             update_pcb_pagetable(pcb, i, frame_loc);
-            // MIGHT BREAK
             enqueuehead_ll(LRU_list, frame_loc, pcb->name, i);
         }
         else {
-            //MIGHT ALSO BREAK
             move_to_front_ll(LRU_list, pcb->page_table[i]);
         }
     }

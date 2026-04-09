@@ -4,7 +4,7 @@
 #include <string.h>
 #include "linked_list.h"
 
-// Linked list interface for LRU implenetation
+// Linked list interface for LRU implementation
 
 // Initializes LL
 LinkedList* init_ll() {
