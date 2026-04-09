@@ -50,7 +50,7 @@ int fetch_page(char* process_name, int pageno) {
 
 int evict() {
     // find pageno to evict (LRU)
-    LinkedList* evicted = pop_ll(LRU_list); // get tail of LRU list
+    LinkedList* evicted = dequeue_ll(LRU_list); // get tail of LRU list
     int frame_loc = evicted->e;
     
     evict_page(evicted->process_name, evicted->pageno, frame_loc);

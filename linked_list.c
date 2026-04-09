@@ -6,13 +6,13 @@
 
 // Linked list interface for LRU implementation
 
-// Initializes LL
+// initializes linked list
 LinkedList* init_ll() {
-    LinkedList* dummy = createnode_ll(0, "", -1);
+    LinkedList* dummy = createnode_ll(0, "", -1); // use dummy node as head
     return dummy;
 }
 
-// Helper method for other queue operations
+// creates node at end of linked list - helper method for other queue operations
 LinkedList* createnode_ll(int e, char* process_name, int pageno) {
     LinkedList* node = malloc(sizeof(LinkedList));
     node->e = e;
@@ -22,7 +22,7 @@ LinkedList* createnode_ll(int e, char* process_name, int pageno) {
     return node;
 }
 
-// Enqueues int to the back of the LL
+// enqueues int to the back of the LL
 int enqueue_ll(LinkedList* ll, int e, char* process_name, int pageno) {
     LinkedList* curr = ll;
     while (curr->next) {
@@ -34,9 +34,9 @@ int enqueue_ll(LinkedList* ll, int e, char* process_name, int pageno) {
     return 0;
 }
 
-// helper for move_to_front_ll - finds node in linked list with element e
-// works because all int elements in our linked lists are unique
-// NOTE: returns node BEFORE target
+// helper for move_to_front_ll - finds node in linked list ll with element e
+// works because all frame indices in the linked list are unique
+// note: returns node BEFORE target
 LinkedList* find_ll(LinkedList* ll, int e) {
     if (isempty_ll(ll)) {
         return NULL;
@@ -53,15 +53,16 @@ LinkedList* find_ll(LinkedList* ll, int e) {
     return NULL; // node doesn't exist
 }
 
+// finds node with frame index e and moves it to the front of linked list ll
 int move_to_front_ll(LinkedList* ll, int e) {
 
-    if (isempty_ll(ll) || ll->next->e == e) {
-        return 0;
+    if (isempty_ll(ll) || ll->next->e == e) { 
+        return 0; // list is empty OR node is already at the front of thel ist
     }
 
-    LinkedList* prev = find_ll(ll,e); // node BEFORE the node to move
+    LinkedList* prev = find_ll(ll,e); // gets node BEFORE the node to move
     if (prev == NULL) {
-      return 1; // search for index that doesn't exist
+      return 1; // error: searched for index that doesn't exist
     }
     LinkedList* node_to_move = prev->next;
     
@@ -73,7 +74,9 @@ int move_to_front_ll(LinkedList* ll, int e) {
     return 0;  
 }
 
-LinkedList* get_ll(LinkedList* ll, int idx) { // gets previous element of element at specified index, or idx < 0 to get at last index
+// gets PREVIOUS element of list at specified index idx
+// if idx < 0, gets element at last index
+LinkedList* get_ll(LinkedList* ll, int idx) { 
     if (isempty_ll(ll)) {
         return NULL;
     }
@@ -85,8 +88,7 @@ LinkedList* get_ll(LinkedList* ll, int idx) { // gets previous element of elemen
             }
             head = head->next;
         }
-    }
-    else {
+    } else {
         while (head->next && head->next->next) {
             head = head->next;
         }
@@ -95,8 +97,7 @@ LinkedList* get_ll(LinkedList* ll, int idx) { // gets previous element of elemen
     return head;
 }
 
-// Enqueues int at the head of the specified LL
-
+// creates and enqueues node at the front of linked list ll
 int enqueuehead_ll(LinkedList* ll, int e, char* process_name, int pageno) {
     LinkedList* temp = ll->next;
     LinkedList* newhead = createnode_ll(e, process_name, pageno);
@@ -105,9 +106,10 @@ int enqueuehead_ll(LinkedList* ll, int e, char* process_name, int pageno) {
     return 0;
 }
 
-LinkedList* pop_ll(LinkedList* ll) {
-    if(isempty_ll(ll)) {
-        return NULL; // ERROR: (note all elements in LL must be non-negative ints)
+// removes and returns node at end of linked list ll
+LinkedList* dequeue_ll(LinkedList* ll) {
+    if (isempty_ll(ll)) {
+        return NULL; // error: (note all elements in LL must be non-negative ints)
     }
     LinkedList* before_tail = get_ll(ll, -1);
     LinkedList* tail = before_tail->next;
@@ -118,50 +120,21 @@ LinkedList* pop_ll(LinkedList* ll) {
     return tail;
 }
 
+// deletes node of linked list ll with frame index e
 void deletenode_ll(LinkedList* ll, int e) {
-    LinkedList* prev = find_ll(ll, e);
+    LinkedList* prev = find_ll(ll, e); // find node BEFORE the node to remove
     LinkedList* to_remove = prev->next;
     prev->next = to_remove->next;
     to_remove->next = NULL;
-
     free_ll(to_remove);
 }
 
-// Dequeues a int from the specified LL
-int dequeue_ll(LinkedList* ll) {
-    if (!ll->next) {
-        printf("LL is empty");
-        return NULL; // empty queue
-    }
-
-    LinkedList* first = ll->next;
-    int value = first->e;
-
-    ll->next = first->next;
-    free(first);
-
-    return value;
-}
-
-// Returns but does not remove the first int of the LL
-int peek_ll(LinkedList* ll) {
-    if (!ll->next) return NULL;
-    return ll->next->e;
-}
-
-// Checks if LL is empty
+// checks if linked list is empty
 int isempty_ll(LinkedList* ll) {
     return (!ll->next);
 }
 
-// Dequeues from the LL until it is empty
-void clear_ll(LinkedList* ll) {
-    while (!isempty_ll(ll)) {
-        dequeue_ll(ll);
-    }
-}
-
-// Frees LL from heap
+// frees linked list from heap
 void free_ll(LinkedList* ll) {
     LinkedList* curr = ll;
     while (curr) {

@@ -417,7 +417,7 @@ int source(char *script) {
     // can be done by moving all logic to my_exec
     // and calling that from here with a default scheduling policy
     // since only 1 pcb anyway
-    char *args[2] = {script, "RR"};
+    char *args[2] = {script, "RR"}; // scheduling policy is always RR
     return my_exec(args, 2, false);
 }
 
