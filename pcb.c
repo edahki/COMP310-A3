@@ -44,7 +44,7 @@ PCB* pcb_init(char* process_name) {
             pcb->page_table[i] = head->page_table[i];
         }
         
-    } else { // need to open file
+    } else { // need to populate rest of fields ourselves
         FILE* fptr = fopen(process_name, "rt");
 
         char linebuf[MAX_USER_INPUT];
@@ -54,7 +54,7 @@ PCB* pcb_init(char* process_name) {
 
             size_t index = allocate_line(linebuf);
             if (index == (size_t)(-1)) {
-                //free the pcb here
+                // free the pcb here
                 fclose(fptr);
                 return NULL;
             }
@@ -62,7 +62,7 @@ PCB* pcb_init(char* process_name) {
         }
         fclose(fptr);
         pcb->line_count = line_count;
-        pcb->page_count = (pcb->line_count + 2) / 3;  // ceiling integer division trick
+        pcb->page_count = (pcb->line_count + 2) / 3; // ceiling integer division trick
         pcb->page_table = malloc(sizeof(int) * pcb->page_count);
 
         for (int i = 0; i < pcb->page_count; i++) {
