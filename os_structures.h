@@ -21,4 +21,4 @@ int fetch_page(char* process_name, int pageno);
 int load_page(char* process_name, int pageno);
 void update_pcb_pagetable(PCB* pcb, int pageno, int frame_loc);
 int evict();
-int evict_page(char* process_name, int pageno, int frame_loc);
+void evict_page(char* process_name, int pageno, int frame_loc);
